@@ -1,0 +1,5 @@
+# small, real repos for the smoke run
+https://github.com/pallets/itsdangerous.git
+https://github.com/pallets/markupsafe.git
+https://github.com/pallets/click.git
+https://github.com/python-attrs/attrs.git

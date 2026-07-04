@@ -1,0 +1,13 @@
+# Data gathering (critical path) is pure Python stdlib + the `git` binary.
+# Nothing here is needed to run `aisloc.gather`; keep that path dependency-free
+# so it stays robust on constrained/offline collection hosts.
+#
+# The dependencies below are for the ANALYSIS side only (panel build, stats,
+# plots, propensity model), which is deliberately separated from gathering.
+
+pandas>=2.2
+pyarrow>=16.0
+numpy>=1.26
+matplotlib>=3.9
+statsmodels>=0.14
+scikit-learn>=1.5

@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.venv/
+venv/
+
+# Collected data: never commit. Regenerate via `make get-data`.
+data/raw-cache/*
+data/records/*
+data/panels/*
+data/results/*
+!data/raw-cache/.gitkeep
+!data/records/.gitkeep
+!data/panels/.gitkeep
+!data/results/.gitkeep
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/*.tmp.*
