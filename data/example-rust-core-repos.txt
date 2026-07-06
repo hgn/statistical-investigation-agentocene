@@ -1,0 +1,45 @@
+# Example curated repo list for a targeted single-ecosystem analysis, per
+# concept.md's cross-repo developer aggregation idea: a deliberately connected
+# sample (one ecosystem's core repos) has much higher cross-repo contributor
+# overlap than a random sample of unrelated repos, making the pooled
+# cross-developer analysis (aisloc.analysis.stats._dev_counterfactual_pooled)
+# far more powerful -- the same core maintainers show up across many of these.
+#
+# Usage:
+#   make get-data PROVIDER=list LIST=data/example-rust-core-repos.txt TARGET=40
+#
+# This is illustrative, not exhaustive or authoritative -- swap in whichever
+# ecosystem is of interest (a language, a company's OSS org, a framework's
+# plugin ecosystem, ...); the property that matters is "many repos, shared
+# core contributors", not "Rust" specifically.
+
+https://github.com/rust-lang/rust.git
+https://github.com/rust-lang/cargo.git
+https://github.com/rust-lang/rustup.git
+https://github.com/rust-lang/rust-analyzer.git
+https://github.com/rust-lang/rustlings.git
+https://github.com/rust-lang/mdBook.git
+https://github.com/rust-lang/rust-clippy.git
+https://github.com/rust-lang/rustfmt.git
+https://github.com/rust-lang/log.git
+https://github.com/rust-lang/regex.git
+https://github.com/rust-lang/libc.git
+https://github.com/rust-lang/cc-rs.git
+https://github.com/rust-lang/backtrace-rs.git
+https://github.com/rust-lang/futures-rs.git
+https://github.com/rust-lang/socket2.git
+https://github.com/tokio-rs/tokio.git
+https://github.com/tokio-rs/tracing.git
+https://github.com/tokio-rs/axum.git
+https://github.com/tokio-rs/bytes.git
+https://github.com/serde-rs/serde.git
+https://github.com/serde-rs/json.git
+https://github.com/clap-rs/clap.git
+https://github.com/hyperium/hyper.git
+https://github.com/hyperium/http.git
+https://github.com/dtolnay/anyhow.git
+https://github.com/dtolnay/thiserror.git
+https://github.com/dtolnay/syn.git
+https://github.com/rayon-rs/rayon.git
+https://github.com/rust-random/rand.git
+https://github.com/BurntSushi/ripgrep.git

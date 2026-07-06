@@ -71,7 +71,16 @@ class ShardWriter:
 
 
 def _load_done(records_dir: Path) -> set[str]:
-    """Repo ids already gathered in any prior run (for resume)."""
+    """Repo ids already gathered in any prior run (for resume).
+
+    Keyed by (provider, name) rather than (provider, repo_id): different
+    sources for the same provider tag assign repo_id differently -- ListSource
+    uses the "owner/repo" name itself (no API call to resolve a real id),
+    GitHubSource uses GitHub's numeric id -- so the same physical repo found
+    via both a curated list and a GitHub search would silently bypass
+    dedup/resume and get mined twice under repo_id keying. "name" (owner/repo)
+    is the one identifier both sources agree on for the same repo.
+    """
     done: set[str] = set()
     for path in records_dir.glob("records-*.jsonl"):
         try:
@@ -81,7 +90,7 @@ def _load_done(records_dir: Path) -> set[str]:
                         obj = json.loads(line)
                     except json.JSONDecodeError:
                         continue
-                    key = f"{obj.get('provider')}:{obj.get('repo_id')}"
+                    key = f"{obj.get('provider')}:{obj.get('name')}"
                     done.add(key)
         except OSError:
             continue
@@ -163,7 +172,7 @@ class Orchestrator:
             if ref is _SENTINEL:
                 break
             assert isinstance(ref, RepoRef)
-            key = f"{ref.provider}:{ref.repo_id}"
+            key = f"{ref.provider}:{ref.name}"  # see _load_done for why not repo_id
             if key in self.done:
                 self.skipped += 1
                 continue
@@ -278,6 +287,14 @@ def _build_config(a: argparse.Namespace) -> Config:
         opts["path"] = a.list
     if a.max_pages:
         opts["max_pages"] = str(a.max_pages)
+    if a.no_code_language_filter:
+        opts["require_code_language"] = "false"
+    opts["min_recent_commits"] = str(a.min_recent_commits)
+    opts["recent_window_days"] = str(a.recent_window_days)
+    if a.include_archived:
+        opts["include_archived"] = "true"
+    if a.gitlab_no_verify_ssl:
+        opts["verify_ssl"] = "false"
 
     limits = ResourceLimits(
         max_concurrency=a.max_concurrency,
@@ -305,9 +322,31 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     p.add_argument("--query", help="GitHub search query (github provider)")
     p.add_argument("--list", help="path to repo list (list provider)")
     p.add_argument("--token", help="API token (or use GITHUB_TOKEN/GITLAB_TOKEN)")
-    p.add_argument("--base-url", dest="base_url", help="GitLab base URL")
-    p.add_argument("--group", help="GitLab group filter")
+    p.add_argument("--base-url", dest="base_url", help="GitLab base URL, e.g. https://gitlab.corp.example")
+    p.add_argument("--group", help="GitLab group filter (default: entire instance)")
+    p.add_argument(
+        "--include-archived", action="store_true",
+        help="include archived projects (gitlab provider; excluded by default)",
+    )
+    p.add_argument(
+        "--gitlab-no-verify-ssl", action="store_true",
+        help="skip TLS verification (gitlab provider; only for a trusted internal "
+        "host with a self-signed certificate)",
+    )
     p.add_argument("--max-pages", type=int, default=10, help="GitHub search pages")
+    p.add_argument(
+        "--no-code-language-filter", action="store_true",
+        help="disable the primary-language/keyword coding-repo heuristic (github provider)",
+    )
+    p.add_argument(
+        "--min-recent-commits", type=int, default=20,
+        help="require at least N commits in --recent-window-days before cloning "
+        "(github provider; 0 disables)",
+    )
+    p.add_argument(
+        "--recent-window-days", type=int, default=30,
+        help="window for --min-recent-commits (github provider)",
+    )
     p.add_argument("--target", type=int, default=500, help="stop after N gathered repos")
     p.add_argument("--since", default="2019-01-01", help="baseline start (history floor)")
     p.add_argument("--scratch", default="data/raw-cache", help="clone scratch dir")

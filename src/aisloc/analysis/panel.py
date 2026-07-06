@@ -30,6 +30,7 @@ def build_frames(records_dir: Path, rule: InclusionRule) -> dict[str, pd.DataFra
     month_rows: list[dict] = []
     act_rows: list[dict] = []
     author_rows: list[dict] = []
+    mention_rows: list[dict] = []
 
     for rec in iter_records(records_dir):
         rid = str(rec.get("repo_id"))
@@ -77,24 +78,55 @@ def build_frames(records_dir: Path, rule: InclusionRule) -> dict[str, pd.DataFra
                 "authors": int(a["authors"]), "active_days": int(a["active_days"]),
             })
         sig_devs = set((rec.get("signatures") or {}).get("authors") or {})
+        style = rec.get("style") or {}
         for a in rec.get("authors") or []:
             ins, dele = int(a["ins"]), int(a["del"])
+            dev = str(a["dev"])
+            ym = str(a["ym"])
+            feats = (style.get(dev) or {}).get(ym) or {}
             author_rows.append({
-                "repo_id": rid, "dev": str(a["dev"]), "ym": str(a["ym"]),
+                "repo_id": rid, "dev": dev, "ym": ym,
                 "ins": ins, "del": dele, "churn": ins + dele,
                 "commits": int(a["commits"]), "n_langs": len(a.get("langs") or []),
-                "dev_has_sig": str(a["dev"]) in sig_devs,
+                "dev_has_sig": dev in sig_devs,
+                "size_mean": float(a.get("size_mean", 0.0)),
+                "size_std": float(a.get("size_std", 0.0)),
+                "size_max": int(a.get("size_max", 0)),
+                "weekend_share": float(a.get("weekend_share", 0.0)),
+                "evening_share": float(a.get("evening_share", 0.0)),
+                "msg_chars": float(feats.get("chars", 0.0)),
+                "msg_words": float(feats.get("words", 0.0)),
+                "msg_lines": float(feats.get("lines", 0.0)),
+                "msg_has_bullets": float(feats.get("has_bullets", 0.0)),
+                "msg_unique_word_ratio": float(feats.get("unique_word_ratio", 0.0)),
+                "bugfix_commits": int(feats.get("bugfix", 0)),
+                "feature_commits": int(feats.get("feature", 0)),
+                "total_commits": int(feats.get("total", 0)),
             })
+
+        # Dedicated, standalone "hype curve": raw bare-word AI-tool mentions
+        # per (repo, month), deliberately separate from the strict Tier-1
+        # signature detection above -- see mining/stylometry.py's `mentions()`.
+        # Never merged into author-month/p_ai; report as its own descriptive
+        # time series only.
+        for ym, counts in (rec.get("mentions") or {}).items():
+            total = int(counts.get("total", 0))
+            row = {"repo_id": rid, "ym": str(ym), "total_commits": total}
+            for term in ("claude", "copilot", "chatgpt", "gpt", "cursor", "cody",
+                        "tabnine", "codeium", "windsurf", "aider", "ai_generic"):
+                row[f"mentions_{term}"] = int(counts.get(term, 0))
+            mention_rows.append(row)
 
     frames = {
         "repo-meta": pd.DataFrame(meta_rows),
         "repo-month": pd.DataFrame(month_rows),
         "repo-activity": pd.DataFrame(act_rows),
         "author-month": pd.DataFrame(author_rows),
+        "mentions-month": pd.DataFrame(mention_rows),
     }
     # month index relative to the anchor: negative = pre-AI, 0 = anchor month
     anchor_ord = _ord(rule.anchor)
-    for key in ("repo-month", "repo-activity", "author-month"):
+    for key in ("repo-month", "repo-activity", "author-month", "mentions-month"):
         df = frames[key]
         if not df.empty:
             df["t"] = df["ym"].map(_ord) - anchor_ord
@@ -109,7 +141,7 @@ def _ord(ym: str) -> int:
 def write_frames(frames: dict[str, pd.DataFrame], out_dir: Path) -> None:
     for name, df in frames.items():
         # CSV for the small/headline tables; parquet-if-available for all.
-        save_table(df, out_dir, name, csv=name in ("repo-meta", "repo-month"))
+        save_table(df, out_dir, name, csv=name in ("repo-meta", "repo-month", "mentions-month"))
 
 
 def main(argv: list[str] | None = None) -> int:

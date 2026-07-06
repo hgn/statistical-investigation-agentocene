@@ -1,0 +1,67 @@
+# Curated JavaScript/TypeScript-ecosystem repo list, same purpose as
+# rust-community-repos.txt: core toolchain, frameworks, build tools, and
+# widely-used libraries -- good candidates for high cross-repo developer
+# overlap once combined with a broader language search supplement.
+#
+# Usage: make get-data PROVIDER=list LIST=data/javascript-community-repos.txt TARGET=45
+
+# --- core toolchain / runtimes ---
+https://github.com/npm/cli.git
+https://github.com/yarnpkg/berry.git
+https://github.com/pnpm/pnpm.git
+https://github.com/microsoft/TypeScript.git
+
+# --- frameworks ---
+https://github.com/facebook/react.git
+https://github.com/vuejs/core.git
+https://github.com/angular/angular.git
+https://github.com/sveltejs/svelte.git
+https://github.com/solidjs/solid.git
+https://github.com/remix-run/remix.git
+https://github.com/vercel/next.js.git
+https://github.com/nuxt/nuxt.git
+https://github.com/withastro/astro.git
+
+# --- build tools / bundlers ---
+https://github.com/vitejs/vite.git
+https://github.com/webpack/webpack.git
+https://github.com/rollup/rollup.git
+
+# --- testing ---
+https://github.com/facebook/jest.git
+https://github.com/vitest-dev/vitest.git
+https://github.com/cypress-io/cypress.git
+https://github.com/microsoft/playwright.git
+
+# --- state management / data fetching ---
+https://github.com/reduxjs/redux.git
+https://github.com/pmndrs/zustand.git
+https://github.com/TanStack/query.git
+
+# --- UI component libraries ---
+https://github.com/shadcn-ui/ui.git
+https://github.com/chakra-ui/chakra-ui.git
+https://github.com/ant-design/ant-design.git
+https://github.com/mui/material-ui.git
+
+# --- widely-used libraries ---
+https://github.com/lodash/lodash.git
+https://github.com/date-fns/date-fns.git
+https://github.com/axios/axios.git
+https://github.com/expressjs/express.git
+https://github.com/fastify/fastify.git
+https://github.com/nestjs/nest.git
+
+# --- monorepo tooling ---
+https://github.com/nrwl/nx.git
+https://github.com/vercel/turborepo.git
+
+# --- popular apps / tools ---
+https://github.com/excalidraw/excalidraw.git
+https://github.com/tldraw/tldraw.git
+https://github.com/storybookjs/storybook.git
+https://github.com/microsoft/vscode.git
+
+# --- linting / formatting ---
+https://github.com/eslint/eslint.git
+https://github.com/prettier/prettier.git

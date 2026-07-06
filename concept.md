@@ -91,11 +91,51 @@ two design-based checks that are very hard for a generic secular trend to fake:
   config-only commits; issue/PR comment cadence if fetched). If these rise in
   lockstep with source churn, the source-churn rise is not AI-specific.
 
-### 2.4 Design C — Within-developer / matched (robustness)
+### 2.4 Design C — Within-developer / matched (elevated from robustness to co-primary)
 
 Same developer, many repos, across the shock boundary. Developer fixed effects (or
 a matched pre/post within-author panel) strip out "this person is just fast" and
 compositional change (new hires). Isolates change *in the same hands*.
+
+**Empirically validated (2026-07-04):** this stopped being merely a robustness
+check once real data on ~300 repos showed *why* it matters concretely. AI
+adoption is a per-developer choice, not a repo-level one, so repo-mean pooling
+dilutes exactly the signal of interest; worse, it is confounded by **team-size
+composition drift** — repos gain casual/drive-by contributors as they mature,
+which mechanically lowers "churn per developer" with nothing to do with AI. In
+the 309-repo / 156-included run, the repo-level placebo check came out at
++100-140% (badly failing), while the identical placebo re-run on the
+developer-level counterfactual (same person's own churn, own trend, no
+division by headcount) came out within ~2 percentage points of zero. Tracking
+the same individual over time is immune to what happens to team composition
+elsewhere; the repo-level pooling is not. Design C is therefore promoted to a
+co-primary analysis (`aisloc.analysis.stats`'s developer-level section), run
+alongside Designs A/B rather than only as a confirmatory check on them.
+
+Implementation notes carried over from this validation:
+- The dose is the developer's own PU-model `p_ai` (Design E), not language
+  suitability — directly testing "do developers who probably use AI show a
+  bigger change in their own output".
+- Lifecycle curvature at the *per-entity* level (repo or developer) should be
+  handled by keeping the trend **linear**, not quadratic: age/tenure and
+  calendar time are the same straight line up to a shift for a single entity,
+  so a quadratic term adds no real information, and naive polynomial
+  extrapolation over a 24-30 month post window turned out to be numerically
+  unstable in practice (it made both the repo- and developer-level placebo
+  checks *worse*). Genuine age effects belong in the *pooled* cross-repo
+  backbone regression instead, where age varies independently across entities.
+- Because the effect is very unlikely to be uniform across people, population
+  means are not the only thing worth reporting: dispersion/heterogeneity by
+  AI-likelihood group (does the AI-likely group have a fatter right tail of
+  large individual gains, even if the mean doesn't move?) and a standout-
+  individuals leaderboard are computed alongside the mean dose-response.
+- The pseudonymised developer hash is stable across repos, enabling cross-repo
+  aggregation for contributors active in multiple sampled repos. This is thin
+  under broad random sampling (~3% overlap in the 309-repo run) and much more
+  powerful under a **deliberately connected sample** — one ecosystem's core
+  maintainers, who work across many of that ecosystem's repos by construction
+  (see `data/example-rust-core-repos.txt` and the README's "Developer-level
+  analysis" section).
 
 ### 2.4b Design E — Per-entity AI-use propensity (PU learning)
 

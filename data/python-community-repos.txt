@@ -1,0 +1,71 @@
+# Curated Python-ecosystem repo list, same purpose as rust-community-repos.txt:
+# core toolchain, popular frameworks, and widely-used libraries with long
+# histories and (usually) many contributors -- good candidates for high
+# cross-repo developer overlap once combined with a broader language:Python
+# search supplement.
+#
+# Usage: make get-data PROVIDER=list LIST=data/python-community-repos.txt TARGET=45
+
+# --- core toolchain ---
+https://github.com/python/cpython.git
+https://github.com/pypa/pip.git
+https://github.com/pypa/setuptools.git
+https://github.com/pypa/virtualenv.git
+https://github.com/pyenv/pyenv.git
+https://github.com/python-poetry/poetry.git
+https://github.com/pypa/hatch.git
+https://github.com/pypa/pipx.git
+https://github.com/astral-sh/uv.git
+
+# --- web frameworks ---
+https://github.com/pallets/flask.git
+https://github.com/django/django.git
+https://github.com/tiangolo/fastapi.git
+https://github.com/encode/starlette.git
+https://github.com/encode/httpx.git
+https://github.com/aio-libs/aiohttp.git
+https://github.com/encode/django-rest-framework.git
+
+# --- data science / ML ---
+https://github.com/pandas-dev/pandas.git
+https://github.com/numpy/numpy.git
+https://github.com/scipy/scipy.git
+https://github.com/scikit-learn/scikit-learn.git
+https://github.com/pytorch/pytorch.git
+https://github.com/huggingface/transformers.git
+https://github.com/huggingface/datasets.git
+https://github.com/matplotlib/matplotlib.git
+
+# --- testing / typing / linting ---
+https://github.com/pytest-dev/pytest.git
+https://github.com/python/mypy.git
+https://github.com/PyCQA/pylint.git
+https://github.com/psf/black.git
+
+# --- CLI / TUI ---
+https://github.com/Textualize/rich.git
+https://github.com/Textualize/textual.git
+https://github.com/tqdm/tqdm.git
+
+# --- async / task queues / ORM ---
+https://github.com/celery/celery.git
+https://github.com/python-trio/trio.git
+https://github.com/sqlalchemy/sqlalchemy.git
+
+# --- popular applications ---
+https://github.com/home-assistant/core.git
+https://github.com/ansible/ansible.git
+https://github.com/certbot/certbot.git
+https://github.com/localstack/localstack.git
+https://github.com/scrapy/scrapy.git
+https://github.com/psf/requests.git
+https://github.com/conda/conda.git
+
+# --- LLM ecosystem (currently very "hip") ---
+https://github.com/langchain-ai/langchain.git
+https://github.com/run-llama/llama_index.git
+https://github.com/openai/openai-python.git
+
+# --- docs ---
+https://github.com/mkdocs/mkdocs.git
+https://github.com/sphinx-doc/sphinx.git

@@ -8,14 +8,24 @@ PY := PYTHONPATH=src python3
 PROVIDER ?= github
 TARGET   ?= 500
 SINCE    ?= 2019-01-01
-QUERY    ?= stars:>100 pushed:>2024-01-01
+QUERY    ?= stars:>100 pushed:>2024-01-01 created:<2021-06-01
 LIST     ?=
 CAP_GB   ?= 3
 CONC     ?=
+MIN_RECENT_COMMITS ?= 20
+RECENT_WINDOW_DAYS ?= 30
+BASE_URL ?=
+GROUP    ?=
 
-# list provider needs --list; others ignore it
-LIST_ARG := $(if $(LIST),--list $(LIST),)
-CONC_ARG := $(if $(CONC),--max-concurrency $(CONC),)
+# list provider needs --list; gitlab provider needs --base-url; others ignore them
+LIST_ARG     := $(if $(LIST),--list $(LIST),)
+CONC_ARG     := $(if $(CONC),--max-concurrency $(CONC),)
+BASE_URL_ARG := $(if $(BASE_URL),--base-url $(BASE_URL),)
+GROUP_ARG    := $(if $(GROUP),--group $(GROUP),)
+GATHER_ARGS := --provider $(PROVIDER) $(LIST_ARG) $(CONC_ARG) $(BASE_URL_ARG) $(GROUP_ARG) \
+	--target $(TARGET) --since $(SINCE) --per-repo-cap-gb $(CAP_GB) \
+	--min-recent-commits $(MIN_RECENT_COMMITS) --recent-window-days $(RECENT_WINDOW_DAYS) \
+	--query '$(QUERY)'
 
 # --- cache stamps: presence means "already done", so nothing re-runs until
 #     `make data-clear` (records) or `make results-clear` (derived) removes them
@@ -57,9 +67,7 @@ results-clear: ##@ delete only derived panels/results (keeps raw records)
 # ============================================================================
 
 $(RECORDS_STAMP):
-	$(PY) -m aisloc.gather --provider $(PROVIDER) $(LIST_ARG) $(CONC_ARG) \
-		--target $(TARGET) --since $(SINCE) --per-repo-cap-gb $(CAP_GB) \
-		--query '$(QUERY)'
+	$(PY) -m aisloc.gather $(GATHER_ARGS)
 	@touch $@
 
 $(PANEL_STAMP): $(RECORDS_STAMP)
@@ -75,8 +83,7 @@ $(RESULTS_STAMP): $(PANEL_STAMP)
 # ============================================================================
 
 gather: ## force a gather run now (bypasses the cache stamp)
-	$(PY) -m aisloc.gather --provider $(PROVIDER) $(LIST_ARG) $(CONC_ARG) \
-		--target $(TARGET) --since $(SINCE) --per-repo-cap-gb $(CAP_GB) --query '$(QUERY)'
+	$(PY) -m aisloc.gather $(GATHER_ARGS)
 	@touch $(RECORDS_STAMP)
 
 synth: ## generate a synthetic panel with a planted AI effect (for validation)

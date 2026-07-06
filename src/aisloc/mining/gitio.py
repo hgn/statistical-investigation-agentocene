@@ -3,8 +3,10 @@
 Design choices that keep disk/memory bounded (concept.md sec. 8):
 * ``--bare``: no working-tree checkout, only the object store.
 * ``--shallow-since=<baseline>``: fetch only the history we analyse, not the
-  whole repo back to its first commit. Falls back to a full bare clone if the
-  server rejects shallow-since (then we bound with ``--since`` at log time).
+  whole repo back to its first commit. Falls back to a full bare clone only if
+  the server rejects shallow-since outright (then we bound with ``--since`` at
+  log time); a disk-cap trip on the shallow clone is NOT retried as a full
+  clone, since that would only be larger and fail again.
 * ``--single-branch --no-tags``: default branch only.
 * a disk watchdog races the clone and kills it if it blows past the per-repo cap.
 """
@@ -12,6 +14,7 @@ Design choices that keep disk/memory bounded (concept.md sec. 8):
 from __future__ import annotations
 
 import asyncio
+import enum
 import os
 import shutil
 from collections.abc import AsyncIterator
@@ -61,21 +64,38 @@ async def clone_bounded(
     base_args = ["--bare", "--single-branch", "--no-tags", "--quiet"]
 
     shallow_args = base_args + [f"--shallow-since={cfg.baseline_since}"]
-    if await _try_clone(url, dest, shallow_args, cfg, env):
+    outcome = await _try_clone(url, dest, shallow_args, cfg, env)
+    if outcome is _Outcome.OK:
         return CloneResult(dest, shallow=True)
+    if outcome in (_Outcome.DISK_CAP, _Outcome.TIMEOUT):
+        # Either the shallow slice already exceeded the disk cap, or it was too
+        # slow to finish in time: a full clone of the same repo can only be
+        # larger/slower, so retrying would just waste time/bandwidth on a
+        # guaranteed second failure. Give up on this repo instead.
+        _rmtree(dest)
+        raise GitError(f"shallow clone {outcome.name.lower()}: {url}")
 
-    # Some servers/protocols reject shallow-since. Retry as a full bare clone;
-    # history is then bounded at log time via --since, and disk is still guarded
-    # by the watchdog.
+    # outcome is FAILED (git exited non-zero quickly): some servers/protocols
+    # reject shallow-since outright. Retry as a full bare clone; history is
+    # then bounded at log time via --since, and disk is still guarded by the
+    # watchdog.
     _rmtree(dest)
-    if await _try_clone(url, dest, base_args, cfg, env):
+    outcome = await _try_clone(url, dest, base_args, cfg, env)
+    if outcome is _Outcome.OK:
         return CloneResult(dest, shallow=False)
     raise GitError(f"clone failed: {url}")
 
 
+class _Outcome(enum.Enum):
+    OK = enum.auto()
+    FAILED = enum.auto()
+    DISK_CAP = enum.auto()
+    TIMEOUT = enum.auto()
+
+
 async def _try_clone(
     url: str, dest: Path, args: list[str], cfg: Config, env: dict[str, str]
-) -> bool:
+) -> "_Outcome":
     proc = await asyncio.create_subprocess_exec(
         "git", "clone", *args, url, str(dest),
         stdout=asyncio.subprocess.DEVNULL,
@@ -96,11 +116,11 @@ async def _try_clone(
         )
         if trip_wait in done:  # cap exceeded -> kill
             _kill(proc)
-            return False
-        if waiter not in done:  # timeout
+            return _Outcome.DISK_CAP
+        if waiter not in done:  # clone_timeout_s exceeded -> kill
             _kill(proc)
-            return False
-        return proc.returncode == 0
+            return _Outcome.TIMEOUT
+        return _Outcome.OK if proc.returncode == 0 else _Outcome.FAILED
     finally:
         watch.cancel()
         for t in (waiter, trip_wait):
@@ -121,7 +141,13 @@ async def stream_log(
     repo: Path, args: list[str], cfg: Config, source_env: dict[str, str]
 ) -> AsyncIterator[bytes]:
     """Yield raw stdout lines from ``git -C repo log <args>`` as they arrive, so
-    large histories never materialise fully in memory."""
+    large histories never materialise fully in memory.
+
+    ``log_timeout_s`` bounds the *entire* streaming wall-clock time, not just
+    the final wait after EOF: a pathological repo (huge diffs, degenerate
+    history) could otherwise keep producing output past any reasonable budget
+    with nothing here to stop it.
+    """
     env = _git_env(cfg, source_env)
     proc = await asyncio.create_subprocess_exec(
         "git", "-C", str(repo), "log", *args,
@@ -130,10 +156,20 @@ async def stream_log(
         env=env,
     )
     assert proc.stdout is not None
+    deadline = asyncio.get_event_loop().time() + cfg.log_timeout_s
     try:
-        async for line in proc.stdout:
+        while True:
+            remaining = deadline - asyncio.get_event_loop().time()
+            if remaining <= 0:
+                raise GitError(f"git log exceeded {cfg.log_timeout_s}s: {repo}")
+            try:
+                line = await asyncio.wait_for(proc.stdout.readline(), timeout=remaining)
+            except asyncio.TimeoutError:
+                raise GitError(f"git log exceeded {cfg.log_timeout_s}s: {repo}") from None
+            if not line:
+                break
             yield line
-        await asyncio.wait_for(proc.wait(), timeout=cfg.log_timeout_s)
+        await proc.wait()
     finally:
         if proc.returncode is None:
             _kill(proc)

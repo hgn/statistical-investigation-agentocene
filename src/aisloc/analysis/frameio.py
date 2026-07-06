@@ -37,4 +37,15 @@ def load_table(in_dir: Path, name: str) -> pd.DataFrame:
     csv = in_dir / f"{name}.csv"
     if not csv.exists():
         raise FileNotFoundError(f"no table {name}.(parquet|csv) in {in_dir}")
-    return pd.read_csv(csv, dtype={"ym": str, "first_month": str, "last_month": str})
+    # repo_id mixes two shapes in the same column: ListSource uses the
+    # "owner/repo" name as its id (no API call to resolve a real one),
+    # GitHubSource uses GitHub's numeric id as a string. Without an explicit
+    # dtype, pandas' chunked type inference on that mixed column can silently
+    # produce inconsistent per-chunk dtypes (the classic "Columns (0) have
+    # mixed types" warning) -- and a later `.isin()`/set comparison between two
+    # tables loaded this way can then fail to match rows that are the same
+    # value in different dtypes, silently dropping repos from any join. Force
+    # it to str everywhere so every table agrees on one representation.
+    return pd.read_csv(
+        csv, dtype={"repo_id": str, "ym": str, "first_month": str, "last_month": str}
+    )

@@ -18,3 +18,8 @@ data/results/*
 # Claude Code local settings
 .claude/settings.local.json
 .claude/*.tmp.*
+
+# Secrets: never commit.
+.github-token
+.gitlab-token
+*.token

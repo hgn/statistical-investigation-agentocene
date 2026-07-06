@@ -1,0 +1,102 @@
+# Curated Rust-ecosystem repo list: core toolchain, the popular Rust rewrites
+# of classic Unix CLI tools ("hip" replacements for grep/find/cat/ls/du/ps/top/
+# sed/tldr/cd/diff/time/curl), async/web ecosystem, editors/terminals/shells,
+# and widely-used libraries. Broad and long-running/actively-maintained by
+# design, per the cross-repo developer-overlap idea in concept.md sec. 2.4 --
+# Rust core contributors typically work across many of these repos.
+#
+# Usage: make get-data PROVIDER=list LIST=data/rust-community-repos.txt TARGET=80
+
+# --- core toolchain ---
+https://github.com/rust-lang/rust.git
+https://github.com/rust-lang/cargo.git
+https://github.com/rust-lang/rustup.git
+https://github.com/rust-lang/rust-analyzer.git
+https://github.com/rust-lang/rust-clippy.git
+https://github.com/rust-lang/rustfmt.git
+https://github.com/rust-lang/regex.git
+https://github.com/rust-lang/log.git
+https://github.com/rust-lang/libc.git
+https://github.com/rust-lang/futures-rs.git
+https://github.com/rust-lang/backtrace-rs.git
+https://github.com/rust-lang/mdBook.git
+https://github.com/rust-lang/rustlings.git
+https://github.com/rust-lang/crates.io.git
+
+# --- "hip" Rust rewrites of classic Unix tools ---
+https://github.com/BurntSushi/ripgrep.git
+https://github.com/sharkdp/fd.git
+https://github.com/sharkdp/bat.git
+https://github.com/eza-community/eza.git
+https://github.com/bootandy/dust.git
+https://github.com/dalance/procs.git
+https://github.com/ClementTsang/bottom.git
+https://github.com/chmln/sd.git
+https://github.com/dbrgn/tealdeer.git
+https://github.com/ajeetdsouza/zoxide.git
+https://github.com/starship/starship.git
+https://github.com/dandavison/delta.git
+https://github.com/sharkdp/hyperfine.git
+https://github.com/ducaale/xh.git
+https://github.com/imsnif/bandwhich.git
+https://github.com/orf/gping.git
+https://github.com/XAMPPRocky/tokei.git
+https://github.com/sharkdp/hexyl.git
+https://github.com/watchexec/watchexec.git
+https://github.com/casey/just.git
+https://github.com/Wilfred/difftastic.git
+https://github.com/Canop/broot.git
+https://github.com/extrawurst/gitui.git
+https://github.com/skim-rs/skim.git
+https://github.com/ouch-org/ouch.git
+https://github.com/Byron/dua-cli.git
+https://github.com/phiresky/ripgrep-all.git
+
+# --- shells / terminals / editors ---
+https://github.com/nushell/nushell.git
+https://github.com/zellij-org/zellij.git
+https://github.com/alacritty/alacritty.git
+https://github.com/wez/wezterm.git
+https://github.com/helix-editor/helix.git
+
+# --- async runtime & web ecosystem ---
+https://github.com/tokio-rs/tokio.git
+https://github.com/tokio-rs/tracing.git
+https://github.com/tokio-rs/axum.git
+https://github.com/tokio-rs/bytes.git
+https://github.com/tokio-rs/mio.git
+https://github.com/async-rs/async-std.git
+https://github.com/actix/actix-web.git
+https://github.com/hyperium/hyper.git
+https://github.com/hyperium/http.git
+https://github.com/seanmonstar/reqwest.git
+https://github.com/rustls/rustls.git
+https://github.com/tower-rs/tower.git
+
+# --- serialization / CLI parsing / error handling ---
+https://github.com/serde-rs/serde.git
+https://github.com/serde-rs/json.git
+https://github.com/clap-rs/clap.git
+https://github.com/dtolnay/anyhow.git
+https://github.com/dtolnay/thiserror.git
+https://github.com/dtolnay/syn.git
+
+# --- widely-used libraries ---
+https://github.com/rust-itertools/itertools.git
+https://github.com/rayon-rs/rayon.git
+https://github.com/rust-random/rand.git
+https://github.com/time-rs/time.git
+https://github.com/chronotope/chrono.git
+https://github.com/uuid-rs/uuid.git
+https://github.com/launchbadge/sqlx.git
+https://github.com/diesel-rs/diesel.git
+
+# --- game dev / graphics / wasm ---
+https://github.com/bevyengine/bevy.git
+https://github.com/bytecodealliance/wasmtime.git
+https://github.com/gfx-rs/wgpu.git
+
+# --- Rust-written tools for other ecosystems (currently very "hip") ---
+https://github.com/astral-sh/ruff.git
+https://github.com/denoland/deno.git
+https://github.com/swc-project/swc.git

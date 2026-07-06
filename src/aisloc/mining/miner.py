@@ -29,15 +29,25 @@ async def mine_repo(ref: RepoRef, cfg: Config, source: RepoSource, dest: Path) -
     url = source.authorize_url(ref)
     env = source.clone_env()
 
-    clone = await gitio.clone_bounded(url, dest, cfg, env)
+    # git's own --since (and even --since-as-filter) is a traversal hint, not a
+    # guaranteed per-commit filter: non-linear history (an old feature branch
+    # merged in later, a rebase, imported history) can leak commits from years
+    # before the requested cutoff -- confirmed against real shallow clones
+    # (scipy, tokio) during this project. Enforce the floor ourselves. Also
+    # cap at "now": a real gathered repo (zebra-rs/zebra-rs) had commits dated
+    # 2106 and 2242 from a misconfigured system clock, not a parsing bug.
+    min_ym = cfg.baseline_since[:7]
+    max_ym = datetime.now(timezone.utc).strftime("%Y-%m")
+
     try:
-        agg = churn.Aggregator()
+        clone = await gitio.clone_bounded(url, dest, cfg, env)
+        agg = churn.Aggregator(min_ym=min_ym, max_ym=max_ym)
         async for line in gitio.stream_log(dest, churn.log_args(cfg.baseline_since), cfg, env):
             churn.feed_line(agg, line)
         churn_rec = agg.to_record()
 
         sig_lines = gitio.stream_log(dest, signatures.log_args(cfg.baseline_since), cfg, env)
-        sig_rec = await signatures.scan(sig_lines)
+        sig_rec = await signatures.scan(sig_lines, min_ym=min_ym, max_ym=max_ym)
     finally:
         gitio.cleanup(dest)
 
@@ -62,6 +72,10 @@ def _assemble(
         hash_email(email): classes
         for email, classes in (sig_rec.get("authors") or {}).items()  # type: ignore[union-attr]
     }
+    style_authors = {
+        hash_email(email): months
+        for email, months in (sig_rec.get("style") or {}).items()  # type: ignore[union-attr]
+    }
 
     return {
         "schema": 1,
@@ -75,6 +89,8 @@ def _assemble(
         "shallow": shallow,
         "meta": ref.meta,
         "signatures": {"repo": sig_rec.get("repo", {}), "authors": sig_authors},
+        "style": style_authors,
+        "mentions": sig_rec.get("mentions", {}),
         "months": churn_rec["months"],
         "activity": churn_rec["activity"],
         "authors": authors,
