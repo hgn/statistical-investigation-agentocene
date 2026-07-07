@@ -1,4 +1,4 @@
-# AI-Induced SLOC Velocity
+# Statistical Investigation: Agentocene
 
 Empirical mining pipeline that tests, across many git repositories, whether the
 arrival of generative-AI coding tools caused a measurable shift in how much code

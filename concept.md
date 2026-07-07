@@ -1,4 +1,4 @@
-# AI-Induced SLOC Velocity — Research Concept
+# Statistical Investigation: Agentocene — Research Concept
 
 Status: draft methodology. No code yet. Goal: a design that survives peer review
 in empirical software engineering, not a plausible-looking dashboard.

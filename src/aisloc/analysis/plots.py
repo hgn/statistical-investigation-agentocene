@@ -45,6 +45,7 @@ class _Theme:
     seq: object  # sequential colormap, ordered/ranked data
     seq2: object  # second sequential colormap, for 2-tone gradients
     qual: object  # qualitative colormap with >10 distinguishable hues
+    transparent: bool  # drop the figure background on save (site embeds it)
 
 
 _LIGHT = _Theme(
@@ -52,12 +53,17 @@ _LIGHT = _Theme(
     ink="#333333", muted="#9aa3ab",
     pre="#4C72B0", post="#DD8452", pos="#55A868", neg="#C44E52",
     seq=plt.cm.viridis, seq2=plt.cm.plasma, qual=plt.cm.tab20,
+    transparent=False,
 )
 _DARK = _Theme(
     style_path=_SKILL_DIR / "modern-dark.mplstyle", suffix="-dark",
     ink="#e8e6f0", muted="#8f8aa8",
     pre="#40c4ff", post="#ffab40", pos="#69f0ae", neg="#ff6e6e",
     seq=plt.cm.plasma, seq2=plt.cm.magma, qual=plt.cm.tab20,
+    # the dark PNGs are embedded on a dark-grey site background, not a flat
+    # near-black one -- a transparent background blends in instead of
+    # showing a visible rectangle
+    transparent=True,
 )
 
 # Mutable "current theme" -- reassigned by _apply_theme() before each render
@@ -72,15 +78,17 @@ SEQ = _LIGHT.seq
 SEQ2 = _LIGHT.seq2
 QUAL = _LIGHT.qual
 _SUFFIX = _LIGHT.suffix
+_TRANSPARENT = _LIGHT.transparent
 
 
 def _apply_theme(theme: _Theme) -> None:
-    global INK, MUTED, PRE, POST, POS, NEG, SEQ, SEQ2, QUAL, _SUFFIX
+    global INK, MUTED, PRE, POST, POS, NEG, SEQ, SEQ2, QUAL, _SUFFIX, _TRANSPARENT
     plt.style.use(str(theme.style_path))
     INK, MUTED = theme.ink, theme.muted
     PRE, POST, POS, NEG = theme.pre, theme.post, theme.pos, theme.neg
     SEQ, SEQ2, QUAL = theme.seq, theme.seq2, theme.qual
     _SUFFIX = theme.suffix
+    _TRANSPARENT = theme.transparent
 
 
 def _style() -> None:
@@ -90,7 +98,7 @@ def _style() -> None:
 def _save(fig: plt.Figure, path: Path) -> None:
     if _SUFFIX:
         path = path.with_name(f"{path.stem}{_SUFFIX}{path.suffix}")
-    fig.savefig(path, dpi=300)
+    fig.savefig(path, dpi=300, transparent=_TRANSPARENT)
     plt.close(fig)
     print(f"[plots] wrote {path}", file=sys.stderr)
 
@@ -209,22 +217,32 @@ def plot_propensity(results: Path, out: Path) -> None:
     ax1.set_ylabel("Repositories")
     ax1.legend(loc="upper center")
 
-    # forest of the top inferred repos with CIs, dots colored by rank (viridis
-    # -- sequential, since these are already sorted by p_ai)
-    top = p[p["label_source"] == "inferred"].nlargest(15, "p_ai").iloc[::-1]
-    if not top.empty:
-        yy = np.arange(len(top))
-        xc = top["p_ai"].to_numpy()
-        lo = top["p_ai_lo"].to_numpy()
-        hi = top["p_ai_hi"].to_numpy()
-        dot_colors = SEQ(np.linspace(0.15, 0.85, len(top)))
+    # A "top-N by p_ai" forest plot is close to meaningless here: the
+    # distribution is heavily ceiling-stacked (confirmed on real data --
+    # even the median *inferred* repo already sits at p_ai=0.98), so the
+    # top 15 are always a wall of identical 1.00s with near-zero CI width,
+    # regardless of which 15 they are. Sample evenly by RANK across the
+    # whole inferred population instead: that guarantees real spread (both
+    # in the point estimate and in CI width) without cherry-picking, and
+    # honestly shows that most of the mass really is near-certain while a
+    # genuine gradient exists below it.
+    inferred_df = p[p["label_source"] == "inferred"].sort_values("p_ai").reset_index(drop=True)
+    if not inferred_df.empty:
+        n_show = min(14, len(inferred_df))
+        rank_idx = np.linspace(0, len(inferred_df) - 1, n_show).round().astype(int)
+        sample = inferred_df.iloc[rank_idx]
+        yy = np.arange(len(sample))
+        xc = sample["p_ai"].to_numpy()
+        lo = sample["p_ai_lo"].to_numpy()
+        hi = sample["p_ai_hi"].to_numpy()
+        dot_colors = SEQ(np.linspace(0.15, 0.85, len(sample)))
         ax2.errorbar(xc, yy, xerr=[xc - lo, hi - xc], fmt="none",
                      ecolor=MUTED, elinewidth=1.2, capsize=2, zorder=1)
         ax2.scatter(xc, yy, color=dot_colors, s=40, zorder=2, edgecolor="white", linewidth=0.6)
         ax2.set_yticks(yy)
-        labels = top["name"] if "name" in top.columns else top["repo_id"]
+        labels = sample["name"] if "name" in sample.columns else sample["repo_id"]
         ax2.set_yticklabels([str(s)[-22:] for s in labels], fontsize=7)
-        ax2.set_title("Top-Ranked Repositories by P(AI)")
+        ax2.set_title("Spread of P(AI) Across the Inferred Population")
         ax2.set_xlabel("P(AI) [95% Bootstrap CI]")
         ax2.set_xlim(0, 1.02)
     fig.suptitle("Estimated P(AI Use) Across Repositories", fontsize=13, color=INK)
